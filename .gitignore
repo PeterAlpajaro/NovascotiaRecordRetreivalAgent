@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+downloads/
+archives/
+state/
+*.zip
+*.log
+
+.DS_Store

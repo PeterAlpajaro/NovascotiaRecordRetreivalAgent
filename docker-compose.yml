@@ -1,0 +1,24 @@
+services:
+  agent:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      ANTHROPIC_BASE_URL: http://kiro-gateway:8000
+    volumes:
+      - ./downloads:/app/downloads
+      - ./archives:/app/archives
+      - ./state:/app/state
+    depends_on:
+      - kiro-gateway
+
+  kiro-gateway:
+    image: ghcr.io/jwadow/kiro-gateway:latest
+    restart: unless-stopped
+    environment:
+      PROXY_API_KEY: ${ANTHROPIC_API_KEY}
+      KIRO_CREDS_FILE: /home/kiro/.aws/sso/cache/kiro-auth-token.json
+      PROFILE_ARN: ${PROFILE_ARN}
+    volumes:
+      - ~/.aws/sso/cache:/home/kiro/.aws/sso/cache:ro
