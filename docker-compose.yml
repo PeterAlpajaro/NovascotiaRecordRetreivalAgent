@@ -16,9 +16,9 @@ services:
   kiro-gateway:
     image: ghcr.io/jwadow/kiro-gateway:latest
     restart: unless-stopped
+    env_file:
+      - .env.production
     environment:
-      PROXY_API_KEY: ${ANTHROPIC_API_KEY}
       KIRO_CREDS_FILE: /home/kiro/.aws/sso/cache/kiro-auth-token.json
-      PROFILE_ARN: ${PROFILE_ARN}
     volumes:
       - ~/.aws/sso/cache:/home/kiro/.aws/sso/cache:ro
