@@ -217,6 +217,7 @@ class UarbClient:
     async def _download_visible_files(self, page: Page, request_dir: Path, limit: int) -> list[Path]:
         files: list[Path] = []
         seen_doc_ids: set[str] = set()
+        attempted_doc_ids: set[str] = set()
         stale_scrolls = 0
 
         while len(files) < limit and stale_scrolls < 5:
@@ -234,18 +235,20 @@ class UarbClient:
                     break
 
                 doc_id = visible_doc_ids[index]
-                if doc_id in seen_doc_ids:
+                if doc_id in attempted_doc_ids:
                     continue
-                seen_doc_ids.add(doc_id)
+                attempted_doc_ids.add(doc_id)
 
                 button = buttons.nth(index)
                 try:
-                    download = await self._download_one_file(page, button)
-                    filename = _safe_filename(download.suggested_filename, f"{doc_id}.bin")
-                    if not filename.startswith(doc_id):
-                        filename = f"{doc_id}-{filename}"
-                    path = request_dir / filename
-                    await download.save_as(path)
+                    path = await self._download_one_file(page, button, request_dir, doc_id)
+                    actual_id_match = re.match(r"(\d{5,6})", path.name)
+                    actual_id = actual_id_match.group(1) if actual_id_match else doc_id
+                    if actual_id in seen_doc_ids:
+                        logger.info("Skipping duplicate downloaded document %s", actual_id)
+                        path.unlink(missing_ok=True)
+                        continue
+                    seen_doc_ids.add(actual_id)
                     files.append(path)
                     downloaded_this_view += 1
                     logger.info("Downloaded %s", path.name)
@@ -265,7 +268,7 @@ class UarbClient:
 
         return files
 
-    async def _download_one_file(self, page: Page, go_get_it_button):
+    async def _download_one_file(self, page: Page, go_get_it_button, request_dir: Path, doc_id: str) -> Path:
         await go_get_it_button.click(timeout=30000)
         await page.locator(".fm-download-button").first.wait_for(timeout=30000)
 
@@ -278,9 +281,27 @@ class UarbClient:
         request = await request_info.value
         download_url = request.url
 
-        async with page.expect_download(timeout=90000) as download_info:
-            await page.evaluate("(url) => { window.location.href = url; }", download_url)
-        download = await download_info.value
+        download_page = await page.context.new_page()
+        try:
+            async with download_page.expect_download(timeout=90000) as download_info:
+                try:
+                    await download_page.goto(download_url, wait_until="commit", timeout=90000)
+                except Exception as exc:
+                    # Chromium reports ERR_ABORTED when a top-level navigation
+                    # turns into a file download. In this path the download
+                    # event is the success signal.
+                    if "ERR_ABORTED" not in str(exc):
+                        raise
+            download = await download_info.value
+            filename = _safe_filename(download.suggested_filename, f"{doc_id}.bin")
+            path = request_dir / filename
+            suffix = 2
+            while path.exists():
+                path = request_dir / f"{path.stem}-{suffix}{path.suffix}"
+                suffix += 1
+            await download.save_as(path)
+        finally:
+            await download_page.close()
 
         try:
             await page.get_by_text("Close").last.click(timeout=10000)
@@ -288,7 +309,7 @@ class UarbClient:
         except Exception as exc:
             logger.warning("Could not close download dialog cleanly: %s", exc)
 
-        return download
+        return path
 
 
 def download_documents_sync(settings: Settings, request: AgentRequest) -> DownloadResult:
