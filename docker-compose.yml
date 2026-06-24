@@ -10,12 +10,12 @@ services:
       - ./downloads:/app/downloads
       - ./archives:/app/archives
       - ./state:/app/state
-    depends_on:
-      - kiro-gateway
 
   kiro-gateway:
     image: ghcr.io/jwadow/kiro-gateway:latest
     restart: unless-stopped
+    profiles:
+      - kiro
     env_file:
       - .env.production
     environment:

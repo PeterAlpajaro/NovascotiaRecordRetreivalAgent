@@ -17,7 +17,7 @@ For matching requests, it opens the Nova Scotia UARB public documents database, 
 - Python
 - Playwright for browser automation
 - Gmail IMAP/SMTP for email intake and replies
-- Kiro Gateway for Anthropic-style request parsing, with deterministic regex fallback
+- Optional Kiro Gateway for Anthropic-style request parsing, with deterministic regex fallback
 - Docker Compose for VM deployment
 
 ## Supported Document Types
@@ -59,6 +59,12 @@ The Compose file runs its own `kiro-gateway` container and mounts the existing K
 ```
 
 No public port is required because the agent polls Gmail.
+
+Kiro parsing is optional. The production demo can run with `ENABLE_LLM_PARSE=false`; to enable it after refreshing Kiro credentials, set `ENABLE_LLM_PARSE=true` and start the profile:
+
+```bash
+docker compose --profile kiro up -d --build
+```
 
 ## Demo Flow
 

@@ -36,6 +36,7 @@ class Settings:
     state_path: str
     uarb_url: str
     headless: bool
+    enable_llm_parse: bool
     anthropic_api_key: str
     anthropic_base_url: str
     claude_model: str
@@ -59,6 +60,7 @@ class Settings:
             state_path=os.getenv("STATE_PATH", "/app/state/agent_state.json"),
             uarb_url=os.getenv("UARB_URL", "https://uarb.novascotia.ca/fmi/webd/UARB15"),
             headless=_bool("HEADLESS", True),
+            enable_llm_parse=_bool("ENABLE_LLM_PARSE", False),
             anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", ""),
             anthropic_base_url=os.getenv("ANTHROPIC_BASE_URL", "http://kiro-gateway:8000"),
             claude_model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514"),

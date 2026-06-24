@@ -96,7 +96,7 @@ def parse_request(text: str, settings: Settings) -> AgentRequest | None:
 
 
 def parse_request_with_kiro(text: str, settings: Settings) -> AgentRequest | None:
-    if not settings.anthropic_api_key:
+    if not settings.enable_llm_parse or not settings.anthropic_api_key:
         return None
 
     system = (
