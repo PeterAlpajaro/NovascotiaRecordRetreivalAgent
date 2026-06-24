@@ -37,6 +37,8 @@ def process_once(settings: Settings) -> int:
     for incoming in messages:
         if state.has_processed(incoming.uid):
             continue
+        if state.has_ignored(incoming.uid):
+            continue
 
         request = parse_request(f"{incoming.subject}\n\n{incoming.body}", settings)
         if not request:
